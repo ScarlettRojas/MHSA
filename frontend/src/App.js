@@ -8,6 +8,8 @@ import Tasks from './pages/Tasks';
 import SessionsPage from './pages/SessionsPage';
 //mood
 import MoodsPage from './pages/MoodsPage';
+//resoruces
+import ResourcesPage from './pages/ResourcesPage';
 
 function App() {
   return (
@@ -20,6 +22,7 @@ function App() {
         <Route path="/tasks" element={<Tasks />} />
         <Route path="/sessions" element={<SessionsPage />} />
         <Route path="/moods" element={<MoodsPage />} />
+        <Route path="/resources" element={<ResourcesPage />} />
       </Routes>
     </Router>
   );
