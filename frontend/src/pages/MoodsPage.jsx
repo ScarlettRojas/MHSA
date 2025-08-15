@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { fetchMoods, createMood, updateMood, deleteMood } from '../api/moods';
 import PastelCard from '../components/PastelCard';
 
@@ -10,17 +10,28 @@ const MOODS = [
   { value: 'stressed', label: 'Stressed' },
 ];
 
+// YYYY-MM-DDTHH:mm in local time
+const nowLocal = () => {
+  const d = new Date();
+  d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+  return d.toISOString().slice(0, 16);
+};
+
 export default function MoodsPage() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState('');
   const [editingId, setEditingId] = useState(null);
 
+  // sort by date: newest first by default
+  const [dateSort, setDateSort] = useState('desc'); // 'asc' | 'desc'
+
   const [form, setForm] = useState({
-    date: '',
-    mood: 'neutral',
-    intensity: 3,
+    date: nowLocal(),   // default: now (no "Now" button)
+    mood: 'neutral',    // enum (lowercase to match backend)
+    intensity: 3,       // 1..5 (radio)
     notes: '',
+    moodDetail: '',     // extra free-text appended into notes
   });
 
   const load = async () => {
@@ -40,20 +51,43 @@ export default function MoodsPage() {
 
   const onChange = (e) => {
     const { name, value } = e.target;
-    setForm((f) => ({ ...f, [name]: name === 'intensity' ? Number(value) : value }));
+    setForm((f) => ({
+      ...f,
+      [name]: name === 'intensity' ? Number(value) : value,
+    }));
   };
 
-  const clearForm = () => setForm({ date: '', mood: 'neutral', intensity: 3, notes: '' });
+  const clearForm = () =>
+    setForm({
+      date: nowLocal(),
+      mood: 'neutral',
+      intensity: 3,
+      notes: '',
+      moodDetail: '',
+    });
 
   const onSubmit = async (e) => {
     e.preventDefault();
     try {
       setLoading(true);
       setErr('');
+
+      // append optional free-text into notes (doesn't break enum)
+      const combinedNotes = form.moodDetail
+        ? (form.notes ? `${form.notes} | ${form.moodDetail}` : form.moodDetail)
+        : form.notes;
+
+      const payload = {
+        date: form.date,
+        mood: form.mood,               // enum (lowercase)
+        intensity: form.intensity,
+        notes: combinedNotes,
+      };
+
       if (editingId) {
-        await updateMood(editingId, form);
+        await updateMood(editingId, payload);
       } else {
-        await createMood(form);
+        await createMood(payload);
       }
       setEditingId(null);
       clearForm();
@@ -68,10 +102,11 @@ export default function MoodsPage() {
   const onEdit = (item) => {
     setEditingId(item._id);
     setForm({
-      date: item.date ? item.date.substring(0, 16) : '',
-      mood: item.mood ?? 'neutral',
+      date: item.date ? item.date.substring(0, 16) : nowLocal(),
+      mood: item.mood ?? 'neutral',      // backend returns lowercase
       intensity: item.intensity ?? 3,
       notes: item.notes ?? '',
+      moodDetail: '',                    // leave empty; user can add more
     });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -89,6 +124,19 @@ export default function MoodsPage() {
       setLoading(false);
     }
   };
+
+  // Sort by date according to dateSort
+  const sortedItems = useMemo(() => {
+    const arr = [...items];
+    arr.sort((a, b) => {
+      const ta = a?.date ? new Date(a.date).getTime() : 0;
+      const tb = b?.date ? new Date(b.date).getTime() : 0;
+      return dateSort === 'asc' ? ta - tb : tb - ta;
+    });
+    return arr;
+  }, [items, dateSort]);
+
+  const toggleDateSort = () => setDateSort((s) => (s === 'asc' ? 'desc' : 'asc'));
 
   return (
     <div className="max-w-5xl mx-auto p-6 space-y-6">
@@ -113,9 +161,10 @@ export default function MoodsPage() {
         </div>
       )}
 
-      {/* Card pastel: Form */}
+      {/* Pastel card: Form */}
       <PastelCard className="p-6">
         <form onSubmit={onSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Date & Time */}
           <label className="flex flex-col">
             <span className="text-sm font-medium mb-1">Date &amp; Time</span>
             <input
@@ -128,6 +177,7 @@ export default function MoodsPage() {
             />
           </label>
 
+          {/* Mood (enum select) */}
           <label className="flex flex-col">
             <span className="text-sm font-medium mb-1">Mood</span>
             <select
@@ -137,25 +187,47 @@ export default function MoodsPage() {
               className="border rounded px-3 py-2 bg-white"
             >
               {MOODS.map((m) => (
-                <option key={m.value} value={m.value}>{m.label}</option>
+                <option key={m.value} value={m.value}>
+                  {m.label}
+                </option>
               ))}
             </select>
           </label>
 
-          <label className="flex flex-col">
-            <span className="text-sm font-medium mb-1">Intensity (1–5)</span>
+          {/* Intensity radios */}
+          <div className="md:col-span-2">
+            <span className="text-sm font-medium">Intensity (1–5)</span>
+            <div className="mt-2 flex gap-4">
+              {[1, 2, 3, 4, 5].map((n) => (
+                <label key={n} className="inline-flex items-center gap-2">
+                  <input
+                    type="radio"
+                    name="intensity"
+                    value={n}
+                    checked={form.intensity === n}
+                    onChange={onChange}
+                    className="accent-blue-600"
+                  />
+                  <span>{n}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* Additional mood text (goes into notes) */}
+          <label className="flex flex-col md:col-span-2">
+            <span className="text-sm font-medium mb-1">Additional mood (text)</span>
             <input
-              type="range"
-              name="intensity"
-              min="1"
-              max="5"
-              value={form.intensity}
+              type="text"
+              name="moodDetail"
+              value={form.moodDetail}
               onChange={onChange}
-              className="w-full"
+              placeholder="Type any mood in your own words (optional)"
+              className="border rounded px-3 py-2 bg-white"
             />
-            <span className="text-sm text-gray-600 mt-1">Current: {form.intensity}</span>
           </label>
 
+          {/* Notes */}
           <label className="flex flex-col md:col-span-2">
             <span className="text-sm font-medium mb-1">Notes</span>
             <textarea
@@ -188,14 +260,25 @@ export default function MoodsPage() {
         </form>
       </PastelCard>
 
-      {/* Card pastel: Table */}
+      {/* Pastel card: History (darker + sortable by date) */}
       <PastelCard>
         <div className="px-6 pt-6 text-sm text-blue-900 font-medium">History</div>
         <div className="overflow-x-auto p-6">
           <table className="min-w-full table-auto">
             <thead>
-              <tr className="text-left text-sm text-blue-900 bg-sky-100">
-                <th className="px-3 py-2 font-medium">Date</th>
+              <tr className="text-left text-sm text-blue-900 bg-sky-200">
+                <th className="px-3 py-2 font-medium">
+                  <button
+                    onClick={toggleDateSort}
+                    className="flex items-center gap-1 hover:underline"
+                    type="button"
+                    aria-label="Sort by date"
+                    title="Sort by date"
+                  >
+                    Date
+                    <span>{dateSort === 'asc' ? '▲' : '▼'}</span>
+                  </button>
+                </th>
                 <th className="px-3 py-2 font-medium">Mood</th>
                 <th className="px-3 py-2 font-medium">Intensity</th>
                 <th className="px-3 py-2 font-medium">Notes</th>
@@ -203,17 +286,17 @@ export default function MoodsPage() {
               </tr>
             </thead>
             <tbody>
-              {items.length === 0 ? (
+              {sortedItems.length === 0 ? (
                 <tr>
-                  <td colSpan="5" className="px-3 py-4 text-gray-600">
+                  <td colSpan="5" className="px-3 py-4 text-gray-700">
                     No moods yet.
                   </td>
                 </tr>
               ) : (
-                items.map((m, idx) => (
+                sortedItems.map((m, idx) => (
                   <tr
                     key={m._id}
-                    className={`border-t ${idx % 2 ? 'bg-sky-50' : 'bg-white'} hover:bg-sky-100`}
+                    className={`border-t ${idx % 2 ? 'bg-sky-200/60' : 'bg-sky-100'} hover:bg-sky-300/60`}
                   >
                     <td className="px-3 py-2">
                       {m.date
@@ -227,16 +310,10 @@ export default function MoodsPage() {
                     <td className="px-3 py-2">{m.intensity}</td>
                     <td className="px-3 py-2">{m.notes || '-'}</td>
                     <td className="px-3 py-2 whitespace-nowrap">
-                      <button
-                        onClick={() => onEdit(m)}
-                        className="text-blue-600 hover:underline mr-3"
-                      >
+                      <button onClick={() => onEdit(m)} className="text-blue-700 hover:underline mr-3">
                         Edit
                       </button>
-                      <button
-                        onClick={() => onDelete(m._id)}
-                        className="text-red-600 hover:underline"
-                      >
+                      <button onClick={() => onDelete(m._id)} className="text-red-600 hover:underline">
                         Delete
                       </button>
                     </td>
