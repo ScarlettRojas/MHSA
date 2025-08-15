@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { fetchMoods, createMood, updateMood, deleteMood } from '../api/moods';
+import PastelCard from '../components/PastelCard';
 
 const MOODS = [
   { value: 'happy', label: 'Happy' },
@@ -92,7 +93,7 @@ export default function MoodsPage() {
   return (
     <div className="max-w-5xl mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-semibold">Mood Tracking</h2>
+        <h2 className="text-2xl font-semibold text-blue-900">Mood Tracking</h2>
         {editingId && (
           <span className="text-sm text-blue-700 bg-blue-50 px-3 py-1 rounded">
             Editing…{' '}
@@ -112,8 +113,8 @@ export default function MoodsPage() {
         </div>
       )}
 
-      {/* Card: Form */}
-      <div className="bg-white shadow rounded p-6">
+      {/* Card pastel: Form */}
+      <PastelCard className="p-6">
         <form onSubmit={onSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <label className="flex flex-col">
             <span className="text-sm font-medium mb-1">Date &amp; Time</span>
@@ -123,7 +124,7 @@ export default function MoodsPage() {
               value={form.date}
               onChange={onChange}
               required
-              className="border rounded px-3 py-2"
+              className="border rounded px-3 py-2 bg-white"
             />
           </label>
 
@@ -133,7 +134,7 @@ export default function MoodsPage() {
               name="mood"
               value={form.mood}
               onChange={onChange}
-              className="border rounded px-3 py-2"
+              className="border rounded px-3 py-2 bg-white"
             >
               {MOODS.map((m) => (
                 <option key={m.value} value={m.value}>{m.label}</option>
@@ -162,7 +163,7 @@ export default function MoodsPage() {
               rows={3}
               value={form.notes}
               onChange={onChange}
-              className="border rounded px-3 py-2"
+              className="border rounded px-3 py-2 bg-white"
             />
           </label>
 
@@ -185,15 +186,15 @@ export default function MoodsPage() {
             )}
           </div>
         </form>
-      </div>
+      </PastelCard>
 
-      {/* Card: Table */}
-      <div className="bg-white shadow rounded">
-        <div className="px-6 pt-6 text-sm text-gray-700">History</div>
+      {/* Card pastel: Table */}
+      <PastelCard>
+        <div className="px-6 pt-6 text-sm text-blue-900 font-medium">History</div>
         <div className="overflow-x-auto p-6">
           <table className="min-w-full table-auto">
             <thead>
-              <tr className="text-left text-sm text-gray-600 bg-gray-50">
+              <tr className="text-left text-sm text-blue-900 bg-sky-100">
                 <th className="px-3 py-2 font-medium">Date</th>
                 <th className="px-3 py-2 font-medium">Mood</th>
                 <th className="px-3 py-2 font-medium">Intensity</th>
@@ -204,22 +205,40 @@ export default function MoodsPage() {
             <tbody>
               {items.length === 0 ? (
                 <tr>
-                  <td colSpan="5" className="px-3 py-4 text-gray-500">
+                  <td colSpan="5" className="px-3 py-4 text-gray-600">
                     No moods yet.
                   </td>
                 </tr>
               ) : (
-                items.map((m) => (
-                  <tr key={m._id} className="border-t">
+                items.map((m, idx) => (
+                  <tr
+                    key={m._id}
+                    className={`border-t ${idx % 2 ? 'bg-sky-50' : 'bg-white'} hover:bg-sky-100`}
+                  >
                     <td className="px-3 py-2">
-                      {m.date ? new Date(m.date).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : '-'}
+                      {m.date
+                        ? new Date(m.date).toLocaleString([], {
+                            dateStyle: 'medium',
+                            timeStyle: 'short',
+                          })
+                        : '-'}
                     </td>
                     <td className="px-3 py-2 capitalize">{m.mood}</td>
                     <td className="px-3 py-2">{m.intensity}</td>
                     <td className="px-3 py-2">{m.notes || '-'}</td>
                     <td className="px-3 py-2 whitespace-nowrap">
-                      <button onClick={() => onEdit(m)} className="text-blue-600 hover:underline mr-3">Edit</button>
-                      <button onClick={() => onDelete(m._id)} className="text-red-600 hover:underline">Delete</button>
+                      <button
+                        onClick={() => onEdit(m)}
+                        className="text-blue-600 hover:underline mr-3"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => onDelete(m._id)}
+                        className="text-red-600 hover:underline"
+                      >
+                        Delete
+                      </button>
                     </td>
                   </tr>
                 ))
@@ -227,7 +246,7 @@ export default function MoodsPage() {
             </tbody>
           </table>
         </div>
-      </div>
+      </PastelCard>
     </div>
   );
 }

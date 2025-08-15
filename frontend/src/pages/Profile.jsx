@@ -1,9 +1,13 @@
+// frontend/src/pages/Profile.jsx
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import axiosInstance from '../axiosConfig';
+import PastelCard from '../components/PastelCard';
 
-const Profile = () => {
-  const { user } = useAuth(); // Access user token from context
+export default function Profile() {
+  const { user } = useAuth(); // token viene de context
+  const token = user?.token;
+
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -12,87 +16,107 @@ const Profile = () => {
   });
   const [loading, setLoading] = useState(false);
 
+  // Cargar perfil
   useEffect(() => {
-    // Fetch profile data from the backend
+    if (!token) return;
     const fetchProfile = async () => {
       setLoading(true);
       try {
-        const response = await axiosInstance.get('/api/auth/profile', {
-          headers: { Authorization: `Bearer ${user.token}` },
+        const { data } = await axiosInstance.get('/api/auth/profile', {
+          headers: { Authorization: `Bearer ${token}` },
         });
         setFormData({
-          name: response.data.name,
-          email: response.data.email,
-          university: response.data.university || '',
-          address: response.data.address || '',
+          name: data.name || '',
+          email: data.email || '',
+          university: data.university || '',
+          address: data.address || '',
         });
       } catch (error) {
+        console.error(error);
         alert('Failed to fetch profile. Please try again.');
       } finally {
         setLoading(false);
       }
     };
+    fetchProfile();
+  }, [token]);
 
-    if (user) fetchProfile();
-  }, [user]);
+  // Cambios de inputs
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
 
+  // Actualizar perfil
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!token) return;
     setLoading(true);
     try {
       await axiosInstance.put('/api/auth/profile', formData, {
-        headers: { Authorization: `Bearer ${user.token}` },
+        headers: { Authorization: `Bearer ${token}` },
       });
-      alert('Profile updated successfully!');
+      alert('Profile updated successfully.');
     } catch (error) {
-      alert('Failed to update profile. Please try again.');
+      console.error(error);
+      alert('Update failed. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  if (loading) {
-    return <div className="text-center mt-20">Loading...</div>;
-  }
-
   return (
-    <div className="max-w-md mx-auto mt-20">
-      <form onSubmit={handleSubmit} className="bg-white p-6 shadow-md rounded">
-        <h1 className="text-2xl font-bold mb-4 text-center">Your Profile</h1>
-        <input
-          type="text"
-          placeholder="Name"
-          value={formData.name}
-          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-          className="w-full mb-4 p-2 border rounded"
-        />
-        <input
-          type="email"
-          placeholder="Email"
-          value={formData.email}
-          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-          className="w-full mb-4 p-2 border rounded"
-        />
-        <input
-          type="text"
-          placeholder="University"
-          value={formData.university}
-          onChange={(e) => setFormData({ ...formData, university: e.target.value })}
-          className="w-full mb-4 p-2 border rounded"
-        />
-        <input
-          type="text"
-          placeholder="Address"
-          value={formData.address}
-          onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-          className="w-full mb-4 p-2 border rounded"
-        />
-        <button type="submit" className="w-full bg-blue-600 text-white p-2 rounded">
-          {loading ? 'Updating...' : 'Update Profile'}
-        </button>
-      </form>
+    <div className="max-w-xl mx-auto mt-10">
+      <PastelCard className="p-6">
+        <h1 className="text-2xl font-bold text-blue-900 text-center mb-5">
+          Your Profile
+        </h1>
+
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <input
+            name="name"
+            placeholder="Name"
+            value={formData.name}
+            onChange={handleChange}
+            className="w-full border rounded px-3 py-2 bg-white"
+            disabled={loading}
+          />
+          <input
+            type="email"
+            name="email"
+            placeholder="Email"
+            value={formData.email}
+            onChange={handleChange}
+            className="w-full border rounded px-3 py-2 bg-white"
+            // normalmente el email no se edita
+            disabled
+          />
+          <input
+            name="university"
+            placeholder="University"
+            value={formData.university}
+            onChange={handleChange}
+            className="w-full border rounded px-3 py-2 bg-white"
+            disabled={loading}
+          />
+          <input
+            name="address"
+            placeholder="Address"
+            value={formData.address}
+            onChange={handleChange}
+            className="w-full border rounded px-3 py-2 bg-white"
+            disabled={loading}
+          />
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-sky-600 hover:bg-sky-700 text-white font-medium py-2 rounded"
+          >
+            {loading ? 'Saving...' : 'Update Profile'}
+          </button>
+        </form>
+      </PastelCard>
     </div>
   );
-};
-
-export default Profile;
+}

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { fetchSessions, createSession, updateSession, deleteSession } from '../api/sessions';
+import PastelCard from '../components/PastelCard';
 
 const DOCTORS = ['Dra. García', 'Dr. Pérez', 'Dr. López'];
 
@@ -91,10 +92,16 @@ export default function SessionsPage() {
   return (
     <div className="max-w-5xl mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-semibold">Session Booking</h2>
+        <h2 className="text-2xl font-semibold text-blue-900">Session Booking</h2>
         {editingId && (
           <span className="text-sm text-blue-700 bg-blue-50 px-3 py-1 rounded">
-            Editing session… <button className="underline ml-2" onClick={() => { setEditingId(null); clearForm(); }}>Cancel</button>
+            Editing session…{' '}
+            <button
+              className="underline ml-2"
+              onClick={() => { setEditingId(null); clearForm(); }}
+            >
+              Cancel
+            </button>
           </span>
         )}
       </div>
@@ -105,8 +112,8 @@ export default function SessionsPage() {
         </div>
       )}
 
-      {/* Card: Form */}
-      <div className="bg-white shadow rounded p-6">
+      {/* Card pastel: Form */}
+      <PastelCard className="p-6">
         <form onSubmit={onSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <label className="flex flex-col">
             <span className="text-sm font-medium mb-1">Date &amp; Time</span>
@@ -116,7 +123,7 @@ export default function SessionsPage() {
               value={form.date}
               onChange={onChange}
               required
-              className="border rounded px-3 py-2"
+              className="border rounded px-3 py-2 bg-white"
             />
           </label>
 
@@ -130,7 +137,7 @@ export default function SessionsPage() {
               value={form.durationMinutes}
               onChange={onChange}
               required
-              className="border rounded px-3 py-2"
+              className="border rounded px-3 py-2 bg-white"
             />
           </label>
 
@@ -142,7 +149,7 @@ export default function SessionsPage() {
               placeholder="counselling / follow-up"
               value={form.type}
               onChange={onChange}
-              className="border rounded px-3 py-2"
+              className="border rounded px-3 py-2 bg-white"
             />
           </label>
 
@@ -152,7 +159,7 @@ export default function SessionsPage() {
               name="doctor"
               value={form.doctor}
               onChange={onChange}
-              className="border rounded px-3 py-2"
+              className="border rounded px-3 py-2 bg-white"
             >
               <option value="">— Select doctor —</option>
               {DOCTORS.map((d) => (
@@ -168,7 +175,7 @@ export default function SessionsPage() {
               rows={3}
               value={form.notes}
               onChange={onChange}
-              className="border rounded px-3 py-2"
+              className="border rounded px-3 py-2 bg-white"
             />
           </label>
 
@@ -191,15 +198,15 @@ export default function SessionsPage() {
             )}
           </div>
         </form>
-      </div>
+      </PastelCard>
 
-      {/* Card: Table */}
-      <div className="bg-white shadow rounded">
-        <div className="px-6 pt-6 text-sm text-gray-700">Create Session</div>
+      {/* Card pastel: Table */}
+      <PastelCard>
+        <div className="px-6 pt-6 text-sm text-blue-900 font-medium">Create Session</div>
         <div className="overflow-x-auto p-6">
           <table className="min-w-full table-auto">
             <thead>
-              <tr className="text-left text-sm text-gray-600 bg-gray-50">
+              <tr className="text-left text-sm text-blue-900 bg-sky-100">
                 <th className="px-3 py-2 font-medium">Date</th>
                 <th className="px-3 py-2 font-medium">Duration</th>
                 <th className="px-3 py-2 font-medium">Type</th>
@@ -211,15 +218,23 @@ export default function SessionsPage() {
             <tbody>
               {items.length === 0 ? (
                 <tr>
-                  <td colSpan="6" className="px-3 py-4 text-gray-500">
+                  <td colSpan="6" className="px-3 py-4 text-gray-600">
                     No sessions yet.
                   </td>
                 </tr>
               ) : (
-                items.map((s) => (
-                  <tr key={s._id} className="border-t">
+                items.map((s, idx) => (
+                  <tr
+                    key={s._id}
+                    className={`border-t ${idx % 2 ? 'bg-sky-50' : 'bg-white'} hover:bg-sky-100`}
+                  >
                     <td className="px-3 py-2">
-                      {s.date ? new Date(s.date).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : '-'}
+                      {s.date
+                        ? new Date(s.date).toLocaleString([], {
+                            dateStyle: 'medium',
+                            timeStyle: 'short',
+                          })
+                        : '-'}
                     </td>
                     <td className="px-3 py-2">{s.durationMinutes} min</td>
                     <td className="px-3 py-2">{s.type || '-'}</td>
@@ -245,7 +260,7 @@ export default function SessionsPage() {
             </tbody>
           </table>
         </div>
-      </div>
+      </PastelCard>
     </div>
   );
 }
