@@ -6,6 +6,8 @@ import Profile from './pages/Profile';
 import Tasks from './pages/Tasks';
 //session
 import SessionsPage from './pages/SessionsPage';
+//mood
+import MoodsPage from './pages/MoodsPage';
 
 function App() {
   return (
@@ -17,6 +19,7 @@ function App() {
         <Route path="/profile" element={<Profile />} />
         <Route path="/tasks" element={<Tasks />} />
         <Route path="/sessions" element={<SessionsPage />} />
+        <Route path="/moods" element={<MoodsPage />} />
       </Routes>
     </Router>
   );
