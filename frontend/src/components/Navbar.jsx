@@ -20,6 +20,7 @@ const Navbar = () => {
             <Link to="/profile" className="mr-4">Profile</Link>
             <Link to="/sessions" className="mr-4">Sessions</Link>
             <Link to="/moods" className="mr-4">Moods</Link>
+            <Link to="/resources" className="mr-4">Resources</Link>
             <button
               onClick={handleLogout}
               className="bg-red-500 px-4 py-2 rounded hover:bg-red-700"
