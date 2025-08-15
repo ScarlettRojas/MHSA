@@ -4,20 +4,31 @@ import PastelCard from '../components/PastelCard';
 
 const DOCTORS = ['Dra. García', 'Dr. Pérez', 'Dr. López'];
 
+// YYYY-MM-DDTHH:mm (local) para <input type="datetime-local">
+const toLocalInputValue = (d = new Date()) => {
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(
+    d.getHours()
+  )}:${pad(d.getMinutes())}`;
+};
+
 export default function SessionsPage() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState('');
   const [editingId, setEditingId] = useState(null);
 
-  // status no se muestra: backend lo deja "pending" por defecto
   const [form, setForm] = useState({
-    date: '',
+    date: toLocalInputValue(),   // default: ahora
     durationMinutes: 60,
     type: '',
     notes: '',
     doctor: '',
   });
+
+  // Orden del historial
+  const [sortBy, setSortBy] = useState('date');   // 'date' | 'doctor'
+  const [sortDir, setSortDir] = useState('desc'); // 'asc' | 'desc'
 
   const load = async () => {
     try {
@@ -40,14 +51,30 @@ export default function SessionsPage() {
   };
 
   const clearForm = () =>
-    setForm({ date: '', durationMinutes: 60, type: '', notes: '', doctor: '' });
+    setForm({
+      date: toLocalInputValue(),
+      durationMinutes: 60,
+      type: '',
+      notes: '',
+      doctor: '',
+    });
 
   const onSubmit = async (e) => {
     e.preventDefault();
     try {
       setLoading(true);
       setErr('');
-      const payload = { ...form }; // sin status, lo pone el backend
+
+      // bloquear fechas pasadas
+      const chosen = new Date(form.date);
+      const now = new Date();
+      if (chosen < now) {
+        setErr('Please pick a date and time in the future.');
+        setLoading(false);
+        return;
+      }
+
+      const payload = { ...form };
       if (editingId) {
         await updateSession(editingId, payload);
       } else {
@@ -66,7 +93,7 @@ export default function SessionsPage() {
   const onEdit = (item) => {
     setEditingId(item._id);
     setForm({
-      date: item.date ? item.date.substring(0, 16) : '',
+      date: item.date ? item.date.substring(0, 16) : toLocalInputValue(),
       durationMinutes: item.durationMinutes ?? 60,
       type: item.type ?? '',
       notes: item.notes ?? '',
@@ -88,6 +115,26 @@ export default function SessionsPage() {
       setLoading(false);
     }
   };
+
+  const pickRandomDoctor = () => {
+    if (!DOCTORS.length) return;
+    const rand = DOCTORS[Math.floor(Math.random() * DOCTORS.length)];
+    setForm((f) => ({ ...f, doctor: rand }));
+  };
+
+  const sortedItems = [...items].sort((a, b) => {
+    let cmp = 0;
+    if (sortBy === 'date') {
+      const da = a.date ? new Date(a.date).getTime() : 0;
+      const db = b.date ? new Date(b.date).getTime() : 0;
+      cmp = da - db;
+    } else if (sortBy === 'doctor') {
+      const da = (a.doctor || '').toLowerCase();
+      const db = (b.doctor || '').toLowerCase();
+      cmp = da.localeCompare(db);
+    }
+    return sortDir === 'asc' ? cmp : -cmp;
+  });
 
   return (
     <div className="max-w-5xl mx-auto p-6 space-y-6">
@@ -123,6 +170,7 @@ export default function SessionsPage() {
               value={form.date}
               onChange={onChange}
               required
+              min={toLocalInputValue()}
               className="border rounded px-3 py-2 bg-white"
             />
           </label>
@@ -153,20 +201,30 @@ export default function SessionsPage() {
             />
           </label>
 
-          <label className="flex flex-col">
+          <div className="flex flex-col">
             <span className="text-sm font-medium mb-1">Doctor</span>
-            <select
-              name="doctor"
-              value={form.doctor}
-              onChange={onChange}
-              className="border rounded px-3 py-2 bg-white"
-            >
-              <option value="">— Select doctor —</option>
-              {DOCTORS.map((d) => (
-                <option key={d} value={d}>{d}</option>
-              ))}
-            </select>
-          </label>
+            <div className="flex gap-2">
+              <select
+                name="doctor"
+                value={form.doctor}
+                onChange={onChange}
+                className="border rounded px-3 py-2 bg-white flex-1"
+              >
+                <option value="">— Select doctor —</option>
+                {DOCTORS.map((d) => (
+                  <option key={d} value={d}>{d}</option>
+                ))}
+              </select>
+              <button
+                type="button"
+                onClick={pickRandomDoctor}
+                className="px-3 py-2 rounded bg-blue-600 text-white hover:bg-blue-700"
+                title="Pick a random doctor"
+              >
+                Next available
+              </button>
+            </div>
+          </div>
 
           <label className="flex flex-col md:col-span-2">
             <span className="text-sm font-medium mb-1">Notes</span>
@@ -202,7 +260,31 @@ export default function SessionsPage() {
 
       {/* Card pastel: Table */}
       <PastelCard>
-        <div className="px-6 pt-6 text-sm text-blue-900 font-medium">Create Session</div>
+        <div className="flex items-center justify-between px-6 pt-6">
+          <div className="text-sm text-blue-900 font-medium">Create Session</div>
+
+          {/* Controles de ordenamiento */}
+          <div className="flex items-center gap-2 text-sm">
+            <span className="text-blue-900">Sort by</span>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="border rounded px-2 py-1 bg-white"
+            >
+              <option value="date">Date</option>
+              <option value="doctor">Doctor</option>
+            </select>
+            <select
+              value={sortDir}
+              onChange={(e) => setSortDir(e.target.value)}
+              className="border rounded px-2 py-1 bg-white"
+            >
+              <option value="asc">Asc</option>
+              <option value="desc">Desc</option>
+            </select>
+          </div>
+        </div>
+
         <div className="overflow-x-auto p-6">
           <table className="min-w-full table-auto">
             <thead>
@@ -216,14 +298,14 @@ export default function SessionsPage() {
               </tr>
             </thead>
             <tbody>
-              {items.length === 0 ? (
+              {sortedItems.length === 0 ? (
                 <tr>
                   <td colSpan="6" className="px-3 py-4 text-gray-600">
                     No sessions yet.
                   </td>
                 </tr>
               ) : (
-                items.map((s, idx) => (
+                sortedItems.map((s, idx) => (
                   <tr
                     key={s._id}
                     className={`border-t ${idx % 2 ? 'bg-sky-50' : 'bg-white'} hover:bg-sky-100`}
@@ -264,3 +346,4 @@ export default function SessionsPage() {
     </div>
   );
 }
+
