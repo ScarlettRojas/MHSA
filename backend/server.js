@@ -15,7 +15,6 @@ app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/tasks', require('./routes/taskRoutes'));
 //sessions
 app.use('/api/sessions', require('./routes/sessionRoutes'));
-
 //mood
 app.use('/api/moods', require('./routes/moodRoutes'));
 
