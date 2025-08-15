@@ -12,6 +12,11 @@ const Login = () => {
     e.preventDefault();
     try {
       const response = await axiosInstance.post('/api/auth/login', formData);
+
+      //session
+      if (response?.data?.token) localStorage.setItem('token', response.data.token);
+      if (response?.data?.user)  localStorage.setItem('user', JSON.stringify(response.data.user));
+      
       login(response.data);
       navigate('/tasks');
     } catch (error) {
