@@ -1,7 +1,8 @@
-import { Link, useNavigate } from 'react-router-dom';
+// frontend/src/components/Navbar.jsx
+import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
-const Navbar = () => {
+export default function Navbar() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
@@ -10,38 +11,66 @@ const Navbar = () => {
     navigate('/login');
   };
 
+  // Clase para resaltar el link activo
+  const linkClass = ({ isActive }) =>
+    [
+      'px-3 py-2 rounded-md transition-colors',
+      isActive
+        ? 'bg-white text-sky-900 border border-sky-300 shadow-sm'
+        : 'hover:text-sky-700',
+    ].join(' ');
+
   return (
-    <nav className="bg-blue-600 text-white p-4 flex justify-between items-center">
-      <Link to="/" className="text-2xl font-bold">Task Manager</Link>
-      <div>
-        {user ? (
-          <>
-            <Link to="/tasks" className="mr-4">Tasks</Link>
-            <Link to="/profile" className="mr-4">Profile</Link>
-            <Link to="/sessions" className="mr-4">Sessions</Link>
-            <Link to="/moods" className="mr-4">Moods</Link>
-            <Link to="/resources" className="mr-4">Resources</Link>
-            <button
-              onClick={handleLogout}
-              className="bg-red-500 px-4 py-2 rounded hover:bg-red-700"
-            >
-              Logout
-            </button>
-          </>
-        ) : (
-          <>
-            <Link to="/login" className="mr-4">Login</Link>
-            <Link
-              to="/register"
-              className="bg-green-500 px-4 py-2 rounded hover:bg-green-700"
-            >
-              Register
-            </Link>
-          </>
-        )}
+    <nav className="bg-sky-200 text-slate-900 border-b border-sky-300">
+      <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+        {/* Brand + subtitle */}
+        <Link to="/" className="block leading-tight tracking-tight">
+          <span className="block font-extrabold text-3xl sm:text-4xl text-blue-900">
+            BreathIn
+          </span>
+          <span className="block font-medium text-base sm:text-lg text-blue-800">
+            Mental Health Support
+          </span>
+        </Link>
+
+        {/* Right side menu */}
+        <div className="flex items-center gap-2 sm:gap-3">
+          {user ? (
+            <>
+              <NavLink to="/profile" className={linkClass}>
+                Profile
+              </NavLink>
+              <NavLink to="/sessions" className={linkClass}>
+                Sessions
+              </NavLink>
+              <NavLink to="/moods" className={linkClass}>
+                Moods
+              </NavLink>
+              <NavLink to="/resources" className={linkClass}>
+                Resources
+              </NavLink>
+              <button
+                onClick={handleLogout}
+                className="ml-1 bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600"
+              >
+                Logout
+              </button>
+            </>
+          ) : (
+            <>
+              <NavLink to="/login" className={linkClass}>
+                Login
+              </NavLink>
+              <Link
+                to="/register"
+                className="px-3 py-2 rounded-md bg-emerald-500 text-white hover:bg-emerald-600 transition-colors"
+              >
+                Register
+              </Link>
+            </>
+          )}
+        </div>
       </div>
     </nav>
   );
-};
-
-export default Navbar;
+}
